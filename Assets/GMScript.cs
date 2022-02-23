@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Random = UnityEngine.Random;
+using System.Collections;
 
 // ReSharper disable once InconsistentNaming
 [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -45,7 +46,11 @@ public class GMScript : MonoBehaviour
     private Vector3Int[] PIECE_J;
     private Vector3Int[] PIECE_S;
     private Vector3Int[] PIECE_I;
-    private Vector3Int[][] PIECES; 
+    private Vector3Int[][] PIECES;
+
+    //private float Timer;
+    private int Count;
+    private int rowAdded;
 
     // ReSharper disable once InconsistentNaming
     private int wx2bx(int wx)
@@ -53,31 +58,94 @@ public class GMScript : MonoBehaviour
         return wx - _minBx;
     }
 
+    /*bool TimeManagement()
+    {
+        float _newTime = (Time.time - Timer)%60;
+        if(_newTime <= TimerCount)
+        {
+            TimerCount += 4;
+            return true;
+        }
+        return false;
+    }*/
+
+    bool ChunkManagement()
+    {
+        if(rowAdded >= 4)
+        {
+            Debug.Log(rowAdded);
+            rowAdded = 0;
+            return true;
+        }
+        return false;
+    }
+
     void InitializePieces()
     {
-        PIECE_T = new Vector3Int[] { new(0,-1), new(1,-1), new(0,0),  new(-1,-1) };
-        PIECE_L = new Vector3Int[] { new(0,-1), new(1,-1), new(1,0),  new(-1,-1) };
-        PIECE_J = new Vector3Int[] { new(0,-1), new(1,-1), new(-1,0), new(-1,-1) };
-        PIECE_S = new Vector3Int[] { new(0,-1), new(-1,-1),new(0,0),  new(1,0) };
-        PIECE_Z = new Vector3Int[] { new(0,-1), new(1,-1), new(0,0),  new(-1,0) };
-        PIECE_I = new Vector3Int[] { new(0,0),  new(-1,0), new(-2,0), new(1,0) };
-        PIECES = new []{PIECE_T,PIECE_L,PIECE_Z,PIECE_J,PIECE_S,PIECE_I};
+        PIECE_T = new Vector3Int[] { new(0, -1), new(1, -1), new(0, 0), new(-1, -1) };
+        PIECE_L = new Vector3Int[] { new(0, -1), new(1, -1), new(1, 0), new(-1, -1) };
+        PIECE_J = new Vector3Int[] { new(0, -1), new(1, -1), new(-1, 0), new(-1, -1) };
+        PIECE_S = new Vector3Int[] { new(0, -1), new(-1, -1), new(0, 0), new(1, 0) };
+        PIECE_Z = new Vector3Int[] { new(0, -1), new(1, -1), new(0, 0), new(-1, 0) };
+        PIECE_I = new Vector3Int[] { new(0, 0), new(-1, 0), new(-2, 0), new(1, 0) };
+        PIECES = new[] { PIECE_T, PIECE_L, PIECE_Z, PIECE_J, PIECE_S, PIECE_I };
     }
-    
+
     void Start()
     {
         _myPiece = null;
         _myChunk = null;
         _dirty = true;
         _initialized = false;
+        Count = 0;
+        rowAdded = 0;
+        //Timer = Time.time;
         InitializePieces();
     }
 
+    int Helper()
+    {
+        int max = _minBy;
+        //int min = _minBy;
+        try {
+            for (int i = 0; i < _myChunk.Length; i++)
+            {
+                if (_myChunk[i].y > max)
+                {
+                    max = _myChunk[i].y;
+                }
+            }
+        }catch (Exception e)
+        {
 
+        }
+        return max - _minBy;
+    }
     bool MakeNewPiece(int midX, int maxY)
     {
-        if (null != _myPiece) 
+        if (null != _myPiece)
             return false;
+        Count++;
+        
+        int RowNum = 0;
+        try
+        {
+            RowNum = _myChunk.Length;
+            //Debug.Log(RowNum);
+        }
+        catch (Exception)
+        {
+
+        }
+        int height = Helper();
+        if ( height>= 7) ;
+        {
+            if (RowNum % 28 == 0)
+            {
+                PIECES = PIECES.Concat(new[] { PIECE_I }).ToArray();
+                Debug.Log("Chance of getting PieceI increased");
+            }
+        }
         var targetPiece = PIECES[Random.Range(0, PIECES.Length)];
         _myPiece = new Vector3Int[targetPiece.Length];
         for (var i = 0; i < targetPiece.Length; i++)
@@ -87,15 +155,15 @@ public class GMScript : MonoBehaviour
         }
         return ValidPiece();
     }
-    
+
     void BlankBaseBoard()
     {
         for (int j = _minBy; j <= _maxBy; j++)
-        for (int i = _minBx; i <= _maxBx; i++)
-        {
-            boardMap.SetTile(new Vector3Int(i,j,0),emptyTile);
-        }
-        MakeNewPiece(0,_maxBy);
+            for (int i = _minBx; i <= _maxBx; i++)
+            {
+                boardMap.SetTile(new Vector3Int(i, j, 0), emptyTile);
+            }
+        MakeNewPiece(0, _maxBy);
     }
 
     void SetupBaseBoard()
@@ -103,17 +171,17 @@ public class GMScript : MonoBehaviour
         // Find the bounds for the visible board
         _initialized = true;
         for (var wy = -1 * BOUNDS_MAX; wy < BOUNDS_MAX; wy++)
-        for (var wx = -1 * BOUNDS_MAX; wx < BOUNDS_MAX; wx++)
-        {
-            var cTile = boardMap.GetTile(new Vector3Int(wx,wy,0));
-            if (cTile)
+            for (var wx = -1 * BOUNDS_MAX; wx < BOUNDS_MAX; wx++)
             {
-                if (wx < _minBx) _minBx = wx;
-                if (wy < _minBy) _minBy = wy;
-                if (wx > _maxBx) _maxBx = wx;
-                if (wy > _maxBy) _maxBy = wy;
+                var cTile = boardMap.GetTile(new Vector3Int(wx, wy, 0));
+                if (cTile)
+                {
+                    if (wx < _minBx) _minBx = wx;
+                    if (wy < _minBy) _minBy = wy;
+                    if (wx > _maxBx) _maxBx = wx;
+                    if (wy > _maxBy) _maxBy = wy;
+                }
             }
-        }
 
         BlankBaseBoard();
         Debug.Log($"BOARD SIZE = {(1 + _maxBx - _minBx)} x {(1 + _maxBy - _minBy)}");
@@ -126,24 +194,26 @@ public class GMScript : MonoBehaviour
         {
             if (p.y > row)
             {
-                Vector3Int [] movedPieces = {new(p.x, p.y - 1, p.z)};
+                Vector3Int[] movedPieces = { new(p.x, p.y - 1, p.z) };
                 newChunk = newChunk.Concat(movedPieces).ToArray();
-            } else if (p.y < row)
+            }
+            else if (p.y < row)
             {
-                Vector3Int [] movedPieces = {p};
+                Vector3Int[] movedPieces = { p };
                 newChunk = newChunk.Concat(movedPieces).ToArray();
             }
         }
+        rowAdded = rowAdded - 1;
         _myChunk = newChunk;
         return true;
     }
-    
+
     bool CheckKillChunk()
     {
         if (null == _myChunk) return false;
         for (var row = _minBy; row <= _maxBy; row++)
         {
-            var maxCount = _maxBx - _minBx + 1; 
+            var maxCount = _maxBx - _minBx + 1;
             foreach (var p in _myChunk)
             {
                 if (p.y == row)
@@ -153,17 +223,17 @@ public class GMScript : MonoBehaviour
             }
 
             if (0 == maxCount)
-            { 
+            {
                 _score += 1;
-               if (DEBUG_MODE) Debug.Log($"KILL ROW: {row}! Score: {_score}");
-               
-               return KillRow(row);
+                if (DEBUG_MODE) Debug.Log($"KILL ROW: {row}! Score: {_score}");
+
+                return KillRow(row);
             }
         }
 
         return false;
     }
-    
+
     private bool ValidWorldXY(int wx, int wy)
     {
         return (wx <= _maxBx && wx >= _minBx && wy <= _maxBy && wy >= _minBy);
@@ -206,14 +276,14 @@ public class GMScript : MonoBehaviour
     {
         // rotated_x = (current_y + origin_x - origin_y)
         // rotated_y = (origin_x + origin_y - current_x - ?max_length_in_any_direction)
-        
+
         _dirty = true;
         if (null == _myPiece) return false;
         var newPiece = new Vector3Int[_myPiece.Length];
-        Array.Copy(_myPiece,newPiece,_myPiece.Length);
+        Array.Copy(_myPiece, newPiece, _myPiece.Length);
 
         var origin = _myPiece[0];
-        for (var i = 1; i < _myPiece.Length; i++ )
+        for (var i = 1; i < _myPiece.Length; i++)
         {
             var rotatedX = _myPiece[i].y + origin.x - origin.y;
             var rotatedY = origin.x + origin.y - _myPiece[i].x;
@@ -228,37 +298,46 @@ public class GMScript : MonoBehaviour
 
     Vector3Int RandomEnemyPoint()
     {
-        return new Vector3Int(Random.Range(_minBx,_maxBx),Random.Range(_minBy,0));
+        return new Vector3Int(Random.Range(_minBx, _maxBx), Random.Range(_minBy, 0));
     }
     bool AddChunkAtPoint(Vector3Int chunkPoint)
     {
-        _myChunk ??= new Vector3Int[] {};
+        _myChunk ??= new Vector3Int[] { };
         if (_myChunk.Any(p => p.x == chunkPoint.x && p.y == chunkPoint.y))
             return false;
-        _myChunk = _myChunk.Concat(new [] {chunkPoint}).ToArray();
+        _myChunk = _myChunk.Concat(new[] { chunkPoint }).ToArray();
         return true;
     }
-    
+
     void ChunkPiece()
     {
         if (null == _myPiece) return;
         while (ShiftPiece(0, -1)) { }
+        int Row = 0;
+        try
+        {
+            Row = _myPiece.Length;
+        }catch (Exception)
+        {
 
-        _myChunk ??= new Vector3Int[] {};
+        }
+        _myChunk ??= new Vector3Int[] { };
         _myChunk = _myChunk.Concat(_myPiece).ToArray();
+        int Row2 = _myPiece.Length;
+        rowAdded += Row2 - Row;
         _myPiece = null;
     }
-    
+
     void DoTetrisLeft()
     {
-        ShiftPiece(-1,0);
+        ShiftPiece(-1, 0);
     }
 
     void DoTetrisRight()
     {
-        ShiftPiece(1,0);
+        ShiftPiece(1, 0);
     }
-    
+
     void DoTetrisUp()
     {
         RotatePiece();
@@ -281,10 +360,10 @@ public class GMScript : MonoBehaviour
     void DrawBoard()
     {
         for (int j = _minBy; j <= _maxBy; j++)
-        for (int i = _minBx; i <= _maxBx; i++)
-        {
-            boardMap.SetTile(new Vector3Int(i,j,0),emptyTile);
-        }
+            for (int i = _minBx; i <= _maxBx; i++)
+            {
+                boardMap.SetTile(new Vector3Int(i, j, 0), emptyTile);
+            }
 
         if (null == _myChunk) return;
         foreach (var p in _myChunk)
@@ -298,7 +377,7 @@ public class GMScript : MonoBehaviour
         if (null == _myPiece) return;
         foreach (var p in _myPiece)
         {
-            boardMap.SetTile(p,pieceTile);
+            boardMap.SetTile(p, pieceTile);
         }
     }
 
@@ -306,7 +385,7 @@ public class GMScript : MonoBehaviour
     {
         return AddChunkAtPoint(RandomEnemyPoint());
     }
-    
+
     void FixedUpdate()
     {
         if (0 != _fixedUpdateCount++ % _fixedUpdateFramesToWait) return;
@@ -329,25 +408,25 @@ public class GMScript : MonoBehaviour
         infoText.text = $"PTS:{_score}\n\nMAX:{_difficulty}\n\nCURRIC\n576";
         _fixedUpdateCount = 1;
     }
-    
+
     void Update()
     {
-        if (null == Camera.main) return; 
+        if (null == Camera.main) return;
         if (!_initialized) SetupBaseBoard();
         if (null == _myPiece)
         {
-            if (!MakeNewPiece(0,_maxBy))
-            {   
+            if (!MakeNewPiece(0, _maxBy))
+            {
                 Debug.Log("NO VALID MOVE");
                 Debug.Break();
             }
         }
-        
-        
+
+
         if (Input.GetKeyDown(KeyCode.Q)) { Debug.Break(); }
-        else if (Input.GetMouseButtonDown(0)) 
+        else if (Input.GetMouseButtonDown(0))
         {
-            var point = Camera.main.ScreenToWorldPoint(Input.mousePosition); 
+            var point = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector3Int selectedTile = boardMap.WorldToCell(point);
             AddChunkAtPoint(selectedTile);
             // Debug.Log(selectedTile);
@@ -363,7 +442,7 @@ public class GMScript : MonoBehaviour
             DrawBoard();
             DrawPiece();
         }
-    } 
-    
-   
+    }
+
+
 }

@@ -5,5 +5,5 @@
 3. 2xClick TetrisScene (in Assets/Scenes)
 4. Hit run?
 
-My thought on implementing this adaptation is that making the droping bricks slow down if the players accumulate certain lines of blocks in a period of time
+My player centeric adaption is that if the player really bad at the game (accumulate 7 or more rows using every 7 teris), the chance they get I shape piece will increase.
 Apologies for the mess. YMMV.
